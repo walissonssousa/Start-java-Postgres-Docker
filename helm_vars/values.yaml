@@ -1,0 +1,75 @@
+language: java
+
+deployments:
+  - subset: v1
+    image:
+      repository: registry.mec.gov.br/templatesbackend/templatesbackend-backend
+      tag: latest
+
+envVars:
+  SPRING_PROFILES_ACTIVE: prod
+  SPRING_DATASOURCE_URL: jdbc:oracle:thin:@examec01-scan4:1521/dsvora
+  SPRING_DATASOURCE_USERNAME: DBTEMPLATESBACKEND
+  SPRING_DATASOURCE_PASSWORD: DBTEMPLATESBACKEND
+  SPRING_DATASOURCE_DRIVERCLASSNAME: oracle.jdbc.OracleDriver
+  SPRING_JPA_DATABASEPLATFORM: org.hibernate.dialect.Oracle12cDialect
+  SPRING_LIQUIBASE_DEFAULTSCHEMA: DBTEMPLATESBACKEND
+  SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: DBTEMPLATESBACKEND
+  #API_OAUTH2_URL: https://sso.staging.acesso.gov.br
+  #API_OAUTH2_REDIRECT_URL: http://dsv-templatesbackend.container.mec.gov.br/
+  #API_OAUTH2_CLIENT_ID: polenteste
+  JAVA_OPTS: -Xms256M -Xmx512M
+  API_DB_DEFAULT_SCHEMA: DBTEMPLATESBACKEND
+  MINIO_URL: http://minio.minio-dsv.svc:9000
+  MINIO_BUCKET: templatesbackend
+  MINIO_ACCESSKEY: minio@123
+  MINIO_SECRETKEY: minio@123
+  MAIL_HOST: relaysistemas.mec.gov.br
+  MAIL_PORT: '25'
+  POLEN_UPLOADDIR: arquivos
+  POLEN_MAIL_FROM: notreplay@mec.gov.br
+  POLEN_MAIL_BASEURL: http://dsv-templatesbackend.container.mec.gov.br
+
+springConfig:
+  properties: |-
+    spring.security.oauth2.resourceserver.jwt.issuer-uri=${API_OAUTH2_URL}/
+    spring.security.oauth2.client.registration.govbr-client.client-id=${API_OAUTH2_CLIENT_ID}
+    spring.security.oauth2.client.registration.govbr-client.client-secret=${API_OAUTH2_CLIENT_SECRET}
+    spring.security.oauth2.client.registration.govbr-client.redirect-uri=${API_OAUTH2_REDIRECT_URL}
+    spring.security.oauth2.provider.acessogov.authorization-uri=${API_OAUTH2_URL}/authorize
+    spring.security.oauth2.provider.acessogov.token-uri=${API_OAUTH2_URL}/token
+    spring.security.oauth2.provider.acessogov.user-info-uri=${API_OAUTH2_URL}/userinfo
+    spring.security.oauth2.provider.acessogov.issuer-uri=${API_OAUTH2_URL}/
+    spring.mail.host=${MAIL_HOST}
+    spring.mail.port=${MAIL_PORT}
+    spring.mail.username=${MAIL_USERNAME}
+    spring.mail.password=${MAIL_PASSWORD}
+    spring.mail.properties.mail.smtp.starttls.enable=true
+    logging.level.org.springframework.security=INFO
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 1000Mi
+  requests:
+    memory: 768Mi
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /templatesbackend/actuator/health
+    port: 8080
+  initialDelaySeconds: 120 
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /templatesbackend/actuator/health
+    port: 8080
+  initialDelaySeconds: 120
+
+route:
+  uriPrefix: /templatesbackend
+  gateway:
+    host: dsv-templatesbackend.container.mec.gov.br
+    existingGateway: templatesbackend-frontend
